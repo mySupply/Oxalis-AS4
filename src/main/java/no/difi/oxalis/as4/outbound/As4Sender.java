@@ -136,7 +136,7 @@ public class As4Sender implements WebServiceMessageCallback {
     private CollaborationInfo createCollaborationInfo() {
         return CollaborationInfo.builder()
                 .withConversationId(newId())
-                .withAction(request.getHeader().getDocumentType().getIdentifier())
+                .withAction(request.getHeader().getDocumentType().toString())
                 .withService(Service.builder()
                         .withType(SERVICE_TYPE)
                         .withValue(request.getHeader().getProcess().getIdentifier())
