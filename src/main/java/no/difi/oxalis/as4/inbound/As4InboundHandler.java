@@ -29,7 +29,6 @@ import no.difi.vefa.peppol.common.model.Header;
 import no.difi.vefa.peppol.common.model.TransportProfile;
 import no.difi.vefa.peppol.sbdh.SbdReader;
 import no.difi.vefa.peppol.sbdh.lang.SbdhException;
-import org.apache.commons.io.IOUtils;
 import org.apache.cxf.attachment.AttachmentUtil;
 import org.apache.cxf.helpers.CastUtils;
 import org.apache.cxf.helpers.XPathUtils;
@@ -45,10 +44,10 @@ import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.soap.*;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
-import java.io.*;
-import java.nio.charset.Charset;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -60,6 +59,8 @@ import java.util.zip.GZIPInputStream;
 @Slf4j
 @Singleton
 public class As4InboundHandler {
+
+    private static final String REQUIRED_PAYLOAD_HREF_PREFIX = "cid:";
 
     private final TransmissionVerifier transmissionVerifier;
     private final PersisterHandler persisterHandler;
@@ -85,6 +86,7 @@ public class As4InboundHandler {
         TransmissionIdentifier ti = TransmissionIdentifier.of(envelopeHeader.getMessageId());
 
         validateMessageId(envelopeHeader.getMessageId());
+        validatePayloads(userMessage.getPayloadInfo());
 
         // Prepare response
         Timestamp ts = getTimestamp(soapHeader);
@@ -133,6 +135,17 @@ public class As4InboundHandler {
 
         // Send response
         return response;
+    }
+
+    public static void validatePayloads(PayloadInfo payloadInfo) throws OxalisAs4Exception{
+        List<String> externalPayloads = payloadInfo.getPartInfo().stream()
+                .map( PartInfo::getHref )
+                .filter( href -> !href.startsWith(REQUIRED_PAYLOAD_HREF_PREFIX) )
+                .collect( Collectors.toList() );
+
+        if(!externalPayloads.isEmpty()){
+            throw new OxalisAs4Exception("Invalid message payload. Href detected with \"external\" source: " + externalPayloads);
+        }
     }
 
     public byte[] copyResponse(SOAPMessage response) throws OxalisAs4Exception{
