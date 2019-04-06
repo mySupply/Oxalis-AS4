@@ -187,10 +187,18 @@ public class As4Sender implements WebServiceMessageCallback {
             throw new RuntimeException("Error getting xml date", e);
         }
 
-        return MessageInfo.builder()
+        MessageInfo.Builder builder = MessageInfo.builder()
                 .withMessageId(getMessageId())
-                .withTimestamp(xmlDate)
-                .build();
+                .withTimestamp(xmlDate);
+
+        if( request instanceof As4TransmissionRequest ){
+            As4TransmissionRequest as4TransmissionRequest = (As4TransmissionRequest) request;
+            if( as4TransmissionRequest.getRefToMessageId() != null ){
+                builder.withRefToMessageId( as4TransmissionRequest.getRefToMessageId() );
+            }
+        }
+
+        return builder.build();
     }
 
     private String getMessageId() {

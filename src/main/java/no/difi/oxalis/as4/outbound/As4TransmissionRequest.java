@@ -6,6 +6,8 @@ import java.util.Map;
 
 public interface As4TransmissionRequest extends TransmissionRequest {
 
+    default String getRefToMessageId() { return  null; }
+
     default String getMessageId() {
         return null;
     }
